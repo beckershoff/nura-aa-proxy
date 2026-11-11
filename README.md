@@ -149,6 +149,29 @@ ev/ioniq5-bms.py --mac <vLinker address> --calibrate 72
 Test without a car: `test/elm-emu.py 35000`, then
 `ev/ioniq5-bms.py --tcp 127.0.0.1:35000 --calibrate 74` (synthetic data).
 
+## MITM mode status (forced DPI + EV data)
+
+Both forcing a DPI and feeding EV data to Maps need aa-proxy-rs **MITM mode**,
+which needs the five Android Auto certificate/key files in `/etc/aa-proxy-rs/`
+(`hu_cert.pem`, `hu_key.pem`, `md_cert.pem`, `md_key.pem`, `galroot_cert.pem`).
+These are not in this repo; the aa-proxy-rs README links to places that
+publish the known development set.
+
+Tested so far against the desk Desktop Head Unit:
+
+- **TLS handshake works** — the phone accepts `hu_cert`, the head-unit side
+  accepts `md_cert`, on both the rustls and openssl backends.
+- **But the stream stalls** — with `mitm = true`, each session runs ~10 s
+  (the `timeout_secs` stall detector) then reconnect-loops. The A/V doesn't
+  flow through the MITM path.
+
+Unresolved. It may be a limitation of the DHU *emulator* rather than a real
+head unit, so the next attempt belongs in the car. Levers to try there, in
+order: start MITM as-is; set `add_vendor_channel = false`; enable
+`pkt_debug` to see which channel stalls at ~10 s; try a non-expired
+certificate set (the common `md_cert` expired in 2022). `overlay_enabled` and
+`map_album_art_enabled` are already off by default, so they are not the cause.
+
 ## Robustness
 
 Desk test, Galaxy S25 FE, DHU over USB. Every fault recovered without
