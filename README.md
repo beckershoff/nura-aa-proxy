@@ -68,7 +68,7 @@ result is a static binary.
 
 ```sh
 rsync -a phone/ user@PHONE:aa-proxy-install/
-ssh user@PHONE 'sudo apk add hostapd dnsmasq iw && sudo sh ~/aa-proxy-install/install.sh'
+ssh user@PHONE 'sudo apk add hostapd dnsmasq iw libqrencode-tools && sudo sh ~/aa-proxy-install/install.sh'
 ```
 
 `install.sh` installs the binary, the configs and units, and creates
@@ -94,10 +94,17 @@ sudo systemctl stop aa-proxy.target     # off; USB networking (usb0) restored au
 
 The install also adds, for day-to-day use without a terminal:
 
-- **A "Car mode" app-grid icon** that toggles `aa-proxy.target` and shows a
-  notification. It uses a narrow sudoers rule (`/etc/sudoers.d/60-aa-proxy-toggle`)
-  scoped to just start/stop/status of that one target — no password, no broad
-  root.
+- **A "Car mode" app** (app-grid icon) — a small libadwaita control panel
+  (`aa-proxy-panel`) with: a master on/off switch and live status (off /
+  waiting for phone / phone connected); the screen-off and auto-stop settings;
+  the access-point **name, password and a Wi-Fi QR code** to join the dongle in
+  one scan; and an Advanced section for the car/MITM tweaks (MITM, EV routing,
+  DPI). All privileged actions go through one audited helper, `aa-proxy-ctl`,
+  exposed by a narrow sudoers rule (`/etc/sudoers.d/60-aa-proxy-toggle`) — no
+  password, no broad root. `aa-proxy-toggle` remains as a CLI quick-toggle.
+  Needs `libqrencode-tools` for the QR; GTK4/libadwaita ship with phosh. The
+  launcher runs it with `GSK_RENDERER=cairo` (software rendering) to stay off
+  the GPU.
 - **Panel off while the phone is connected.** A hostapd event hook
   (`aa-proxy-hostapd-events.service`) blanks the backlight on
   `AP-STA-CONNECTED` and restores it on `AP-STA-DISCONNECTED`. The dongle has

@@ -9,6 +9,8 @@ cd "$(dirname "$0")"
 
 install -D -m 755 aa-proxy-rs /usr/local/bin/aa-proxy-rs
 install -D -m 755 aa-proxy-toggle /usr/local/bin/aa-proxy-toggle
+install -D -m 755 aa-proxy-ctl /usr/local/bin/aa-proxy-ctl
+install -D -m 755 aa-proxy-panel.py /usr/local/bin/aa-proxy-panel
 for h in aa-proxy-ap0 aa-proxy-screen aa-proxy-notify aa-proxy-sta-event aa-proxy-idle-guard; do
 	install -D -m 755 "$h" /usr/local/libexec/"$h"
 done
@@ -21,12 +23,11 @@ mkdir -p /var/lib/aa-proxy-rs/crashes
 install -m 644 60_aa-proxy.nft /etc/nftables.d/60_aa-proxy.nft
 systemctl reload nftables 2>/dev/null || systemctl restart nftables
 
-# let the GUI user toggle just this one target without a password (for the app icon)
+# let the GUI user drive car mode without a password, through the one audited
+# helper (it validates its own args, so exposing it NOPASSWD is safe)
 guipid=$(pgrep -x phosh 2>/dev/null | head -1)
 guiuser=$(stat -c %U /proc/"$guipid" 2>/dev/null); guiuser=${guiuser:-user}
-sc=$(command -v systemctl)
-printf '%s ALL=(root) NOPASSWD: %s start aa-proxy.target, %s stop aa-proxy.target, %s is-active aa-proxy.target\n' \
-	"$guiuser" "$sc" "$sc" "$sc" > /etc/sudoers.d/60-aa-proxy-toggle
+printf '%s ALL=(root) NOPASSWD: /usr/local/bin/aa-proxy-ctl\n' "$guiuser" > /etc/sudoers.d/60-aa-proxy-toggle
 chmod 440 /etc/sudoers.d/60-aa-proxy-toggle
 visudo -cf /etc/sudoers.d/60-aa-proxy-toggle >/dev/null || { echo "sudoers rule invalid, removing" >&2; rm -f /etc/sudoers.d/60-aa-proxy-toggle; }
 
