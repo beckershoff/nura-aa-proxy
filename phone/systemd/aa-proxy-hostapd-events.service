@@ -6,7 +6,5 @@ After=aa-proxy-hostapd.service
 
 [Service]
 ExecStart=/usr/sbin/hostapd_cli -p /run/hostapd -a /usr/local/libexec/aa-proxy-sta-event
-# restore the panel whenever this stops (car mode off)
-ExecStopPost=/usr/local/libexec/aa-proxy-screen on
 Restart=on-failure
 RestartSec=3

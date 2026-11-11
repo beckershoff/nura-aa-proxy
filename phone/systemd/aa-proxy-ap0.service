@@ -6,5 +6,11 @@ Before=aa-proxy-hostapd.service aa-proxy-dnsmasq.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+# clear any stale "phone connected" flag from a previous run
+ExecStartPre=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected'
 ExecStart=/usr/local/libexec/aa-proxy-ap0 up
 ExecStop=/usr/local/libexec/aa-proxy-ap0 down
+# car mode off -> always restore the panel and clear the flag (this oneshot's
+# stop hooks run reliably, unlike the restart-prone hostapd-events service)
+ExecStopPost=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected'
+ExecStopPost=/usr/local/libexec/aa-proxy-screen on
