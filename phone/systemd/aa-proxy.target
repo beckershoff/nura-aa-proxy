@@ -1,0 +1,6 @@
+[Unit]
+Description=aa-proxy car mode (Android Auto dongle for the Ioniq 5)
+Wants=aa-proxy-ap0.service aa-proxy-hostapd.service aa-proxy-dnsmasq.service aa-proxy-rs.service
+
+[Install]
+WantedBy=multi-user.target

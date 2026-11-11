@@ -1,0 +1,11 @@
+[Unit]
+Description=aa-proxy car mode: hostapd on ap0
+PartOf=aa-proxy.target
+Requires=aa-proxy-ap0.service
+After=aa-proxy-ap0.service
+
+[Service]
+ExecStartPre=/usr/local/bin/aa-proxy-rs --generate-hostapd
+ExecStart=/usr/sbin/hostapd /run/hostapd.conf
+Restart=on-failure
+RestartSec=3

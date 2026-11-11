@@ -1,0 +1,2 @@
+# Unused on eqs (ap0 is configured by aa-proxy-ap0.service); aa-proxy-rs
+# --generate-system-config expects this template to exist.

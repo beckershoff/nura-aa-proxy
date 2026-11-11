@@ -1,0 +1,12 @@
+# aa-proxy-rs renders this into /run/dnsmasq.conf (aa-proxy-rs --generate-system-config).
+# DHCP only, only on ap0; no DNS, no default route for clients.
+interface=ap0
+bind-interfaces
+except-interface=lo
+port=0
+dhcp-range={{WLAN_SUBNET}}.2,{{WLAN_SUBNET}}.20,12h
+dhcp-authoritative
+dhcp-option=3
+dhcp-option=6
+dhcp-rapid-commit
+dhcp-leasefile=/run/aa-proxy-dnsmasq.leases

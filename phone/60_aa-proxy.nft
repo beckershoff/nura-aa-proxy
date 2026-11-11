@@ -1,0 +1,11 @@
+#!/usr/sbin/nft -f
+# aa-proxy car mode: only on the car AP ap0, never on wlan0/home Wi-Fi.
+# 67 = DHCP for the phone, 5288 = Android Auto from the phone (MD TCP server),
+# 80 = aa-proxy-rs web UI / companion app.
+
+table inet filter {
+	chain input {
+		iifname "ap0" udp dport bootps accept comment "aa-proxy: DHCP on ap0"
+		iifname "ap0" tcp dport { 80, 5288 } accept comment "aa-proxy: Android Auto + web UI on ap0"
+	}
+}

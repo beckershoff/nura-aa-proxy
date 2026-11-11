@@ -1,0 +1,12 @@
+[Unit]
+Description=aa-proxy car mode: Android Auto proxy (USB gadget to the car)
+PartOf=aa-proxy.target
+Requires=aa-proxy-hostapd.service aa-proxy-dnsmasq.service
+After=aa-proxy-hostapd.service aa-proxy-dnsmasq.service bluetooth.service
+Wants=bluetooth.service
+# takes over the USB port: pmOS USB networking (172.16.42.1) stops while this runs
+
+[Service]
+ExecStart=/usr/local/bin/aa-proxy-rs
+Restart=on-failure
+RestartSec=5

@@ -1,0 +1,20 @@
+# /etc/aa-proxy-rs/config.toml for the eqs (Motorola Edge 30 Ultra) as an
+# aa-proxy-rs dongle. Keys/defaults: aa-proxy-rs src/config.rs.
+iface = "ap0"
+wlan_subnet = "10.0.0"
+ssid = "eqs-aa"
+wpa_passphrase = "@PASSPHRASE@"
+band = "5"
+channel = 36
+country_code = "DE"
+wifi_version = 5
+btalias = "eqs-aa"
+udc = "a600000.usb"
+# web UI only on the car AP, not on home Wi-Fi
+webserver = "10.0.0.1:80"
+logfile = "/var/log/aa-proxy-rs.log"
+crash_dir = "/var/lib/aa-proxy-rs/crashes"
+enable_ssh = false
+# step 1: plain proxy; MITM / EV later
+mitm = false
+ev = false

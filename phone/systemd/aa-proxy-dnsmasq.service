@@ -1,0 +1,11 @@
+[Unit]
+Description=aa-proxy car mode: DHCP on ap0
+PartOf=aa-proxy.target
+Requires=aa-proxy-ap0.service
+After=aa-proxy-ap0.service aa-proxy-hostapd.service
+
+[Service]
+ExecStartPre=/usr/local/bin/aa-proxy-rs --generate-system-config
+ExecStart=/usr/sbin/dnsmasq -k -C /run/dnsmasq.conf
+Restart=on-failure
+RestartSec=3

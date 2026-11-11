@@ -1,0 +1,10 @@
+[Unit]
+Description=aa-proxy car mode: ap0 access point interface
+PartOf=aa-proxy.target
+Before=aa-proxy-hostapd.service aa-proxy-dnsmasq.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/aa-proxy-ap0 up
+ExecStop=/usr/local/libexec/aa-proxy-ap0 down

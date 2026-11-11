@@ -1,0 +1,19 @@
+#!/bin/sh
+# aa-proxy-ap0 up|down - the car-mode access point interface next to wlan0
+set -eu
+IF=ap0
+ADDR=10.0.0.1/24
+case "${1:-}" in
+up)
+	ip link show "$IF" >/dev/null 2>&1 || iw phy phy0 interface add "$IF" type __ap
+	ip addr flush dev "$IF"
+	ip addr add "$ADDR" dev "$IF"
+	# Wi-Fi power save drops SSH and the phone link with the screen off
+	iw dev wlan0 set power_save off 2>/dev/null || true
+	;;
+down)
+	ip link show "$IF" >/dev/null 2>&1 && iw dev "$IF" del
+	;;
+*)
+	echo "usage: $0 up|down" >&2; exit 2 ;;
+esac
