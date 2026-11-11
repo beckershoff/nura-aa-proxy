@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Car mode
+Comment=Toggle the Android Auto dongle (aa-proxy) on or off
+Exec=/usr/local/bin/aa-proxy-toggle
+Icon=car
+Terminal=false
+Categories=System;

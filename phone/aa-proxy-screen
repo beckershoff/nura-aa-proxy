@@ -1,0 +1,16 @@
+#!/bin/sh
+# aa-proxy-screen off|on - blank or restore the phone panel (dongle has no viewer).
+# Writes the backlight sysfs directly (runs as root from the car-mode services).
+set -eu
+BL=$(ls -d /sys/class/backlight/* 2>/dev/null | head -1)
+[ -n "${BL:-}" ] || exit 0
+SAVE=/run/aa-proxy-screen.saved
+case "${1:-}" in
+	off)
+		[ -f "$SAVE" ] || cat "$BL/brightness" > "$SAVE"
+		echo 0 > "$BL/brightness" ;;
+	on)
+		if [ -f "$SAVE" ]; then cat "$SAVE" > "$BL/brightness"; rm -f "$SAVE"
+		else cat "$BL/max_brightness" > "$BL/brightness"; fi ;;
+	*) echo "usage: $0 off|on" >&2; exit 2 ;;
+esac

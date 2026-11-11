@@ -1,0 +1,12 @@
+[Unit]
+Description=aa-proxy car mode: screen off when the phone connects (hostapd events)
+PartOf=aa-proxy.target
+Requires=aa-proxy-hostapd.service
+After=aa-proxy-hostapd.service
+
+[Service]
+ExecStart=/usr/sbin/hostapd_cli -p /run/hostapd -a /usr/local/libexec/aa-proxy-sta-event
+# restore the panel whenever this stops (car mode off)
+ExecStopPost=/usr/local/libexec/aa-proxy-screen on
+Restart=on-failure
+RestartSec=3

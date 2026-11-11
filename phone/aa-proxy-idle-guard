@@ -1,0 +1,26 @@
+#!/bin/sh
+# While car mode runs: if the phone is on battery (car off, not charging) AND no
+# daily phone has been connected for IDLE_STOP_MIN minutes, stop car mode to save
+# battery. The clock resets whenever a phone is present or the car is charging us.
+set -u
+IDLE_STOP_MIN=5
+[ -r /etc/aa-proxy-rs/car-mode.conf ] && . /etc/aa-proxy-rs/car-mode.conf
+BATT=$(ls -d /sys/class/power_supply/*bat* 2>/dev/null | head -1)
+idle_since=$(date +%s)
+while :; do
+	sleep 30
+	# phone connected? (a station on ap0, or the hostapd flag)
+	if [ -f /run/aa-proxy-phone-connected ] || iw dev ap0 station dump 2>/dev/null | grep -q Station; then
+		idle_since=$(date +%s); continue
+	fi
+	# car powering us? don't count idle time
+	st=$(cat "$BATT/status" 2>/dev/null || echo Unknown)
+	if [ "$st" != "Discharging" ]; then idle_since=$(date +%s); continue; fi
+	# on battery, no phone
+	if [ $(( $(date +%s) - idle_since )) -ge $(( IDLE_STOP_MIN * 60 )) ]; then
+		/usr/local/libexec/aa-proxy-notify "Stopped" "On battery with no phone for ${IDLE_STOP_MIN} min"
+		/usr/local/libexec/aa-proxy-screen on || true
+		systemctl --no-block stop aa-proxy.target
+		exit 0
+	fi
+done

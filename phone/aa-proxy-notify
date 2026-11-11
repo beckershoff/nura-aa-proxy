@@ -1,0 +1,8 @@
+#!/bin/sh
+# aa-proxy-notify "Title" "Body" - best-effort desktop notification to the GUI user.
+PUID=$(ps -o uid= -C phosh 2>/dev/null | tr -d ' ' | head -1)
+[ -n "${PUID:-}" ] || exit 0
+BUS=/run/user/$PUID/bus
+[ -S "$BUS" ] || exit 0
+sudo -u "#$PUID" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" \
+	notify-send -a "Car mode" "$1" "${2:-}" 2>/dev/null || true

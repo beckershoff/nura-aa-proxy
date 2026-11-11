@@ -1,0 +1,14 @@
+#!/bin/sh
+# Called by hostapd_cli -a. Args: <iface> <event> [mac].
+# Blanks the panel when the daily phone connects, restores when it leaves.
+EV="${2:-}"
+FLAG=/run/aa-proxy-phone-connected
+BLANK=1; [ -r /etc/aa-proxy-rs/car-mode.conf ] && . /etc/aa-proxy-rs/car-mode.conf
+case "$EV" in
+	AP-STA-CONNECTED)
+		: > "$FLAG"
+		[ "${BLANK_ON_CONNECT:-1}" = 1 ] && /usr/local/libexec/aa-proxy-screen off ;;
+	AP-STA-DISCONNECTED)
+		rm -f "$FLAG"
+		/usr/local/libexec/aa-proxy-screen on ;;
+esac

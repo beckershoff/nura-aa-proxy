@@ -1,0 +1,9 @@
+[Unit]
+Description=aa-proxy car mode: stop on battery when idle with no phone
+PartOf=aa-proxy.target
+After=aa-proxy-rs.service
+
+[Service]
+ExecStart=/usr/local/libexec/aa-proxy-idle-guard
+Restart=on-failure
+RestartSec=5

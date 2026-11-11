@@ -1,0 +1,8 @@
+#!/bin/sh
+# One-tap car-mode toggle for the app grid. Uses a narrow NOPASSWD sudoers rule.
+SC=/usr/sbin/systemctl
+if sudo -n $SC is-active --quiet aa-proxy.target; then
+	sudo -n $SC stop aa-proxy.target && notify-send -a "Car mode" "Car mode" "Off"
+else
+	sudo -n $SC start aa-proxy.target && notify-send -a "Car mode" "Car mode" "On"
+fi

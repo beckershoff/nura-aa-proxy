@@ -90,6 +90,27 @@ sudo systemctl start aa-proxy.target    # car mode on
 sudo systemctl stop aa-proxy.target     # off (reboot to get USB networking back)
 ```
 
+### Phone-side controls
+
+The install also adds, for day-to-day use without a terminal:
+
+- **A "Car mode" app-grid icon** that toggles `aa-proxy.target` and shows a
+  notification. It uses a narrow sudoers rule (`/etc/sudoers.d/60-aa-proxy-toggle`)
+  scoped to just start/stop/status of that one target — no password, no broad
+  root.
+- **Panel off while the phone is connected.** A hostapd event hook
+  (`aa-proxy-hostapd-events.service`) blanks the backlight on
+  `AP-STA-CONNECTED` and restores it on `AP-STA-DISCONNECTED`. The dongle has
+  no viewer, so the screen stays dark during a drive.
+- **Battery guard** (`aa-proxy-idle-guard.service`). While car mode runs, if
+  the phone is on battery (the car isn't charging it) *and* no daily phone has
+  connected for `IDLE_STOP_MIN` minutes, it stops car mode and notifies — so a
+  cable left in a parked car doesn't drain the phone. The clock resets whenever
+  a phone is present or the car is charging.
+
+Tunables in `/etc/aa-proxy-rs/car-mode.conf`: `BLANK_ON_CONNECT` (default 1),
+`IDLE_STOP_MIN` (default 5).
+
 On the daily phone, pair Bluetooth with **eqs-aa** once; from then on it
 receives the Wi-Fi credentials automatically and reconnects by itself. Keep
 the daily phone paired with the car's own Bluetooth as well: call audio goes

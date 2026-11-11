@@ -8,14 +8,26 @@ cd "$(dirname "$0")"
 [ -x ./aa-proxy-rs ] || { echo "missing ./aa-proxy-rs binary" >&2; exit 1; }
 
 install -D -m 755 aa-proxy-rs /usr/local/bin/aa-proxy-rs
-install -D -m 755 aa-proxy-ap0 /usr/local/libexec/aa-proxy-ap0
+install -D -m 755 aa-proxy-toggle /usr/local/bin/aa-proxy-toggle
+for h in aa-proxy-ap0 aa-proxy-screen aa-proxy-notify aa-proxy-sta-event aa-proxy-idle-guard; do
+	install -D -m 755 "$h" /usr/local/libexec/"$h"
+done
 install -m 644 hostapd.conf.in /etc/hostapd.conf.in
 install -m 644 dnsmasq.conf.in /etc/dnsmasq.conf.in
 install -D -m 644 interfaces.in /etc/network/interfaces.in
+install -D -m 644 aa-proxy-car-mode.desktop /usr/share/applications/aa-proxy-car-mode.desktop
 for u in systemd/*; do install -m 644 "$u" /etc/systemd/system/; done
 mkdir -p /var/lib/aa-proxy-rs/crashes
 install -m 644 60_aa-proxy.nft /etc/nftables.d/60_aa-proxy.nft
 systemctl reload nftables 2>/dev/null || systemctl restart nftables
+
+# let the GUI user toggle just this one target without a password (for the app icon)
+guiuser=$(ps -o user= -C phosh 2>/dev/null | head -1); guiuser=${guiuser:-user}
+sc=$(command -v systemctl)
+printf '%s ALL=(root) NOPASSWD: %s start aa-proxy.target, %s stop aa-proxy.target, %s is-active aa-proxy.target\n' \
+	"$guiuser" "$sc" "$sc" "$sc" > /etc/sudoers.d/60-aa-proxy-toggle
+chmod 440 /etc/sudoers.d/60-aa-proxy-toggle
+visudo -cf /etc/sudoers.d/60-aa-proxy-toggle >/dev/null || { echo "sudoers rule invalid, removing" >&2; rm -f /etc/sudoers.d/60-aa-proxy-toggle; }
 
 # NetworkManager must leave ap0 alone
 printf '[keyfile]\nunmanaged-devices=interface-name:ap0\n' \
@@ -31,6 +43,7 @@ if [ ! -f /etc/aa-proxy-rs/config.toml ]; then
 else
 	echo "kept /etc/aa-proxy-rs/config.toml"
 fi
+[ -f /etc/aa-proxy-rs/car-mode.conf ] || install -m 644 car-mode.conf /etc/aa-proxy-rs/car-mode.conf
 systemctl daemon-reload
 nmcli general reload conf 2>/dev/null || true
 echo "installed. start: systemctl start aa-proxy.target   stop: systemctl stop aa-proxy.target"
