@@ -10,7 +10,10 @@ RemainAfterExit=yes
 ExecStartPre=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected'
 ExecStart=/usr/local/libexec/aa-proxy-ap0 up
 ExecStop=/usr/local/libexec/aa-proxy-ap0 down
-# car mode off -> always restore the panel and clear the flag (this oneshot's
-# stop hooks run reliably, unlike the restart-prone hostapd-events service)
+# car mode off (this oneshot stops LAST, after aa-proxy-rs has freed the USB
+# controller): restore the panel + flag, and rebuild postmarketOS USB networking
+# (usb0 / 172.16.42.1) that aa-proxy-rs took over — so the phone is normal again
+# with no replug or reboot.
 ExecStopPost=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected'
 ExecStopPost=/usr/local/libexec/aa-proxy-screen on
+ExecStopPost=/bin/sh -c 'systemctl --no-block restart usb-signaller.service'

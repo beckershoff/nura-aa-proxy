@@ -87,7 +87,7 @@ none. It starts nothing.
 
 ```sh
 sudo systemctl start aa-proxy.target    # car mode on
-sudo systemctl stop aa-proxy.target     # off (reboot to get USB networking back)
+sudo systemctl stop aa-proxy.target     # off; USB networking (usb0) restored automatically
 ```
 
 ### Phone-side controls
@@ -117,7 +117,9 @@ the daily phone paired with the car's own Bluetooth as well: call audio goes
 over the hands-free profile directly, not through Android Auto.
 
 While car mode runs, aa-proxy-rs owns the USB port, so postmarketOS's USB
-networking is gone; use SSH over Wi-Fi.
+networking (usb0 / 172.16.42.1) is gone — use SSH over Wi-Fi. Stopping car
+mode rebuilds it automatically (the ap0 oneshot restarts `usb-signaller`), so
+the phone is usable on a cable again with no replug or reboot.
 
 ## Desk test: the PC plays the car
 
