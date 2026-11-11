@@ -3,6 +3,6 @@ Type=Application
 Name=Car mode
 Comment=Android Auto dongle control (aa-proxy)
 Exec=env GSK_RENDERER=cairo /usr/local/bin/aa-proxy-panel
-Icon=car
+Icon=eco.nura.CarMode
 Terminal=false
 Categories=System;Settings;

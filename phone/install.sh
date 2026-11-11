@@ -18,6 +18,8 @@ install -m 644 hostapd.conf.in /etc/hostapd.conf.in
 install -m 644 dnsmasq.conf.in /etc/dnsmasq.conf.in
 install -D -m 644 interfaces.in /etc/network/interfaces.in
 install -D -m 644 aa-proxy-car-mode.desktop /usr/share/applications/aa-proxy-car-mode.desktop
+install -D -m 644 icons/eco.nura.CarMode.svg /usr/share/icons/hicolor/scalable/apps/eco.nura.CarMode.svg
+gtk-update-icon-cache -qtf /usr/share/icons/hicolor 2>/dev/null || true
 for u in systemd/*; do install -m 644 "$u" /etc/systemd/system/; done
 mkdir -p /var/lib/aa-proxy-rs/crashes
 install -m 644 60_aa-proxy.nft /etc/nftables.d/60_aa-proxy.nft

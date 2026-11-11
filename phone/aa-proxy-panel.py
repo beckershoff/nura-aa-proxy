@@ -36,7 +36,7 @@ def phone_connected():
 def get_state():
     """One privileged call for ssid/password/mitm/ev/dpi (config.toml is root-only)."""
     st = {"SSID": "", "PASS": "", "MITM": "false", "EV": "false", "DPI": "0",
-          "BLANK": "1", "IDLE": "5"}
+          "DEBUG": "false", "BLANK": "1", "IDLE": "5"}
     r = sh(CTL + ["get-state"])
     if r and r.returncode == 0:
         for line in r.stdout.splitlines():
@@ -148,6 +148,24 @@ class Panel(Adw.ApplicationWindow):
         g_adv.add(exp)
         page.add(g_adv)
 
+        # --- diagnostics ---
+        g_diag = Adw.PreferencesGroup(title="Diagnostics",
+                                      description="For checking MITM and calls in the car.")
+        dbg_row = Adw.ActionRow(title="Detailed logging",
+                                subtitle="Verbose aa-proxy log (uses more space)")
+        self.debug_sw = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.debug_sw.connect("notify::active", self.on_debug)
+        dbg_row.add_suffix(self.debug_sw)
+        dbg_row.set_activatable_widget(self.debug_sw)
+        g_diag.add(dbg_row)
+        log_row = Adw.ActionRow(title="View logs", subtitle="Live log with filters")
+        log_row.add_prefix(Gtk.Image(icon_name="document-text-symbolic"))
+        log_row.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
+        log_row.set_activatable(True)
+        log_row.connect("activated", lambda *_: LogWindow(self).present())
+        g_diag.add(log_row)
+        page.add(g_diag)
+
         toolbar.set_content(Gtk.ScrolledWindow(child=page, vexpand=True))
         self.toast.set_child(toolbar)
         self.set_content(self.toast)
@@ -197,6 +215,10 @@ class Panel(Adw.ApplicationWindow):
         if not self._guard:
             self._ctl("set-aa", "dpi", str(self.dpi_vals[row.get_selected()]))
 
+    def on_debug(self, sw, _):
+        if not self._guard:
+            self._ctl("set-aa", "debug", "true" if sw.get_active() else "false")
+
     def on_copy_pw(self, *_):
         self.get_clipboard().set(self._pw)
         self._toast("Password copied")
@@ -236,6 +258,7 @@ class Panel(Adw.ApplicationWindow):
             pass
         self.mitm_sw.set_active(st["MITM"] == "true")
         self.ev_sw.set_active(st["EV"] == "true")
+        self.debug_sw.set_active(st["DEBUG"] == "true")
         try:
             d = int(st["DPI"])
             self.dpi_row.set_selected(self.dpi_vals.index(d) if d in self.dpi_vals else 0)
@@ -245,13 +268,98 @@ class Panel(Adw.ApplicationWindow):
         return True
 
 
+FILTERS = {
+    "All": None,
+    "MITM": ("ssl", "mitm", "handshake", "cert", "negotiation", "tls", "cipher"),
+    "Calls": ("hsp", "hfp", " sco", "headset", "call", "bt_sco", "ring", "a2dp"),
+    "Errors": ("error", "warn", "stall", "failed", "abort"),
+}
+
+
+class LogWindow(Adw.Window):
+    def __init__(self, parent):
+        super().__init__(title="aa-proxy log", transient_for=parent, modal=False)
+        self.set_default_size(420, 620)
+        self._filter = "All"
+        self._paused = False
+
+        tv = Adw.ToolbarView()
+        header = Adw.HeaderBar()
+        self.drop = Gtk.DropDown.new_from_strings(list(FILTERS.keys()))
+        self.drop.connect("notify::selected", self._on_filter)
+        header.pack_start(self.drop)
+        pause = Gtk.ToggleButton(icon_name="media-playback-pause-symbolic",
+                                 tooltip_text="Pause auto-refresh")
+        pause.connect("toggled", lambda b: setattr(self, "_paused", b.get_active()))
+        header.pack_end(pause)
+        save = Gtk.Button(icon_name="document-save-symbolic", tooltip_text="Save log to a file")
+        save.connect("clicked", self._on_save)
+        header.pack_end(save)
+        tv.add_top_bar(header)
+
+        self.toast = Adw.ToastOverlay()
+        self.buf = Gtk.TextBuffer()
+        self.view = Gtk.TextView(buffer=self.buf, editable=False, cursor_visible=False,
+                                 monospace=True, wrap_mode=Gtk.WrapMode.WORD_CHAR,
+                                 left_margin=8, right_margin=8, top_margin=6, bottom_margin=6)
+        scroller = Gtk.ScrolledWindow(child=self.view, vexpand=True)
+        self.scroller = scroller
+        self.toast.set_child(scroller)
+        tv.set_content(self.toast)
+        self.set_content(tv)
+
+        self.refresh()
+        self._timer = GLib.timeout_add_seconds(2, self.refresh)
+        self.connect("close-request", self._on_close)
+
+    def _on_filter(self, drop, _):
+        self._filter = list(FILTERS.keys())[drop.get_selected()]
+        self.refresh()
+
+    def _on_close(self, *_):
+        if self._timer:
+            GLib.source_remove(self._timer)
+            self._timer = 0
+        return False
+
+    def _on_save(self, *_):
+        r = sh(CTL + ["save-log"])
+        if r and r.returncode == 0 and r.stdout.strip():
+            self.toast.add_toast(Adw.Toast(title="Saved to " + r.stdout.strip(), timeout=4))
+        else:
+            self.toast.add_toast(Adw.Toast(title="Save failed", timeout=3))
+
+    def refresh(self):
+        if self._paused:
+            return True
+        r = sh(CTL + ["log", "400"])
+        text = r.stdout if (r and r.returncode == 0) else "(no log yet)"
+        keys = FILTERS[self._filter]
+        if keys:
+            text = "\n".join(l for l in text.splitlines()
+                             if any(k in l.lower() for k in keys)) or "(no matching lines)"
+        # keep it light: last ~250 lines
+        lines = text.splitlines()
+        if len(lines) > 250:
+            lines = lines[-250:]
+        self.buf.set_text("\n".join(lines))
+        # autoscroll to the end
+        GLib.idle_add(lambda: self.view.scroll_to_mark(
+            self.buf.create_mark(None, self.buf.get_end_iter(), False), 0, False, 0, 0))
+        return True
+
+
 class App(Adw.Application):
     def __init__(self):
         super().__init__(application_id="eco.nura.CarMode",
                          flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
 
     def do_activate(self):
-        Panel(self).present()
+        p = Panel(self)
+        if os.environ.get("AA_PANEL_VIEW") == "log":  # for testing/screenshots
+            LogWindow(p).present()
+        else:
+            p.present()
 
 
 if __name__ == "__main__":

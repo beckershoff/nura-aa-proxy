@@ -38,7 +38,7 @@ case "$cmd" in
 	set-aa)
 		k=${1:-}; v=${2:-}
 		case "$k" in
-			mitm|ev) case "$v" in true|false) ;; *) die "bad bool" ;; esac ;;
+			mitm|ev|debug) case "$v" in true|false) ;; *) die "bad bool" ;; esac ;;
 			dpi) case "$v" in ''|*[!0-9]*) die "bad int" ;; esac
 				[ "$v" -ge 0 ] && [ "$v" -le 400 ] || die "out of range" ;;
 			*) die "key not allowed: $k" ;;
@@ -51,9 +51,21 @@ case "$cmd" in
 		m=$(sed -n 's/^mitm[[:space:]]*=[[:space:]]*\(true\|false\).*/\1/p' "$AACONF" | head -1)
 		e=$(sed -n 's/^ev[[:space:]]*=[[:space:]]*\(true\|false\).*/\1/p' "$AACONF" | head -1)
 		d=$(sed -n 's/^dpi[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/p' "$AACONF" | head -1)
+		g=$(sed -n 's/^debug[[:space:]]*=[[:space:]]*\(true\|false\).*/\1/p' "$AACONF" | head -1)
 		b=$(sed -n 's/^BLANK_ON_CONNECT=\(.*\)/\1/p' "$CONF" 2>/dev/null | head -1)
 		i=$(sed -n 's/^IDLE_STOP_MIN=\(.*\)/\1/p' "$CONF" 2>/dev/null | head -1)
-		printf 'SSID\t%s\nPASS\t%s\nMITM\t%s\nEV\t%s\nDPI\t%s\nBLANK\t%s\nIDLE\t%s\n' \
-			"$s" "$p" "${m:-false}" "${e:-false}" "${d:-0}" "${b:-1}" "${i:-5}" ;;
-	*) die "usage: start|stop|restart|toggle|set-conf K V|set-aa K V|get-state" ;;
+		printf 'SSID\t%s\nPASS\t%s\nMITM\t%s\nEV\t%s\nDPI\t%s\nDEBUG\t%s\nBLANK\t%s\nIDLE\t%s\n' \
+			"$s" "$p" "${m:-false}" "${e:-false}" "${d:-0}" "${g:-false}" "${b:-1}" "${i:-5}" ;;
+	log)
+		n=${1:-250}; case "$n" in ''|*[!0-9]*) n=250 ;; esac
+		[ "$n" -gt 3000 ] && n=3000
+		tail -n "$n" /var/log/aa-proxy-rs.log 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' ;;
+	save-log)
+		u=$(stat -c %U "/proc/$(pgrep -x phosh | head -1)" 2>/dev/null); u=${u:-user}
+		home=$(awk -F: -v u="$u" '$1==u{print $6}' /etc/passwd); home=${home:-/home/$u}
+		ts=$(date +%Y%m%d-%H%M%S); out="$home/aa-proxy-log-$ts.txt"
+		sed 's/\x1b\[[0-9;]*m//g' /var/log/aa-proxy-rs.log > "$out" 2>/dev/null || die "no log"
+		chown "$u" "$out" 2>/dev/null || true
+		echo "$out" ;;
+	*) die "usage: start|stop|restart|toggle|set-conf K V|set-aa K V|get-state|log [N]|save-log" ;;
 esac
