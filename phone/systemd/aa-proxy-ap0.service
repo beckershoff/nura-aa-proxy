@@ -7,7 +7,7 @@ Before=aa-proxy-hostapd.service aa-proxy-dnsmasq.service
 Type=oneshot
 RemainAfterExit=yes
 # clear any stale "phone connected" flag from a previous run
-ExecStartPre=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected'
+ExecStartPre=/bin/sh -c 'rm -f /run/aa-proxy-phone-connected /run/aa-proxy-screen.saved'
 ExecStart=/usr/local/libexec/aa-proxy-ap0 up
 ExecStop=/usr/local/libexec/aa-proxy-ap0 down
 # car mode off (this oneshot stops LAST, after aa-proxy-rs has freed the USB

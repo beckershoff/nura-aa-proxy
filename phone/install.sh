@@ -22,7 +22,8 @@ install -m 644 60_aa-proxy.nft /etc/nftables.d/60_aa-proxy.nft
 systemctl reload nftables 2>/dev/null || systemctl restart nftables
 
 # let the GUI user toggle just this one target without a password (for the app icon)
-guiuser=$(ps -o user= -C phosh 2>/dev/null | head -1); guiuser=${guiuser:-user}
+guipid=$(pgrep -x phosh 2>/dev/null | head -1)
+guiuser=$(stat -c %U /proc/"$guipid" 2>/dev/null); guiuser=${guiuser:-user}
 sc=$(command -v systemctl)
 printf '%s ALL=(root) NOPASSWD: %s start aa-proxy.target, %s stop aa-proxy.target, %s is-active aa-proxy.target\n' \
 	"$guiuser" "$sc" "$sc" "$sc" > /etc/sudoers.d/60-aa-proxy-toggle

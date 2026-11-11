@@ -1,6 +1,9 @@
 #!/bin/sh
 # aa-proxy-notify "Title" "Body" - best-effort desktop notification to the GUI user.
-PUID=$(ps -o uid= -C phosh 2>/dev/null | tr -d ' ' | head -1)
+# (BusyBox ps has no -C, so find phosh via pgrep + /proc.)
+pid=$(pgrep -x phosh 2>/dev/null | head -1)
+[ -n "$pid" ] || exit 0
+PUID=$(awk '/^Uid:/{print $2; exit}' /proc/"$pid"/status 2>/dev/null)
 [ -n "${PUID:-}" ] || exit 0
 BUS=/run/user/$PUID/bus
 [ -S "$BUS" ] || exit 0

@@ -1,16 +1,23 @@
 #!/bin/sh
 # aa-proxy-screen off|on - blank or restore the phone panel (dongle has no viewer).
-# Writes the backlight sysfs directly (runs as root from the car-mode services).
+# Saves the real pre-blank level and restores exactly that; never jumps to max.
 set -eu
 BL=$(ls -d /sys/class/backlight/* 2>/dev/null | head -1)
 [ -n "${BL:-}" ] || exit 0
 SAVE=/run/aa-proxy-screen.saved
+MAX=$(cat "$BL/max_brightness")
+DEF=$(( MAX * 55 / 100 ))   # sane default when no saved level is known
 case "${1:-}" in
 	off)
-		[ -f "$SAVE" ] || cat "$BL/brightness" > "$SAVE"
-		echo 0 > "$BL/brightness" ;;
+		cur=$(cat "$BL/brightness")
+		# remember the level, but only a real (non-zero) one, and don't
+		# overwrite an earlier save if we are already blanked
+		[ "$cur" -gt 0 ] && printf '%s\n' "$cur" > "$SAVE"
+		printf '0\n' > "$BL/brightness" ;;
 	on)
-		if [ -f "$SAVE" ]; then cat "$SAVE" > "$BL/brightness"; rm -f "$SAVE"
-		else cat "$BL/max_brightness" > "$BL/brightness"; fi ;;
+		v=""; [ -s "$SAVE" ] && v=$(cat "$SAVE"); rm -f "$SAVE"
+		case "$v" in ''|*[!0-9]*) v=$DEF ;; esac
+		[ "$v" -gt 0 ] || v=$DEF
+		printf '%s\n' "$v" > "$BL/brightness" ;;
 	*) echo "usage: $0 off|on" >&2; exit 2 ;;
 esac
